@@ -1,4 +1,5 @@
 import random
+import streamlit as st
 
 # ==========================================
 # [데이터 및 상수 정의]
@@ -114,35 +115,49 @@ def select_prediction_pool(features):
     return PREDICTION_POOLS["custom"]
 
 # ==========================================
-# [메인 프로그램 실행 함수]
+# [Streamlit UI 구성]
 # ==========================================
-def run_chatbot():
-    print("\n" + "=" * 65)
-    print("🍲 [ 트렌드 음식 분석 및 다음 유행 예측 프로그램 ] 🍲")
-    print("=" * 65)
-    print("💡 등록된 음식 예시: 두바이 초콜릿, 요아정, 밤 티라미수, 탕후루 등")
-    print("🚪 언제든지 '그만'을 입력하시면 프로그램이 종료됩니다.")
-    print("=" * 65 + "\n")
+st.set_page_config(page_title="트렌드 음식 분석 AI", page_icon="🍲", layout="centered")
 
-    while True:
-        user_input = input("🔍 분석할 음식 이름을 입력하세요: ").strip()
+st.title("🍲 트렌드 음식 분석 및 다음 유행 예측 대시보드")
+st.markdown("과거 큰 인기를 끌었던 트렌드 음식을 직접 입력하고 성공 요인과 다음 유행 전망을 확인해 보세요.")
+st.markdown("---")
+
+# 사이드바 설정
+st.sidebar.header("📌 이용 안내")
+st.sidebar.info(
+    "• 입력창에 분석하고 싶은 음식 이름을 **직접 입력**하세요.\n"
+    "• 등록되지 않은 이름을 입력하면 **재입력**을 안내합니다.\n"
+    "• 종료하려면 **'그만'**을 입력하세요."
+)
+
+# 사용자 입력 받기 (텍스트 입력 위젯)
+user_input = st.text_input(
+    "🔍 분석할 음식 이름을 입력하세요:",
+    placeholder="예: 두바이 초콜릿, 탕후루, 요아정 등"
+).strip()
+
+# 버튼 클릭 또는 값이 입력된 경우 처리
+if st.button("🚀 분석 및 예측 실행", type="primary"):
+   
+    # 1. 종료 조건 처리
+    if user_input == "그만":
+        st.warning("👋 프로그램을 종료합니다. 이용해 주셔서 감사합니다!")
+        st.stop()
        
-        # 1. 종료 조건 확인
-        if user_input == "그만":
-            print("\n" + "~" * 65)
-            print("👋 프로그램을 종료합니다. 이용해 주셔서 감사합니다!")
-            print("~" * 65 + "\n")
-            break
-           
-        # 2. 데이터베이스 등록 여부 검증 (미등록 시 재입력 유도)
-        if user_input not in FOOD_DATABASE:
-            print("\n" + "❌ " * 22)
-            print(f" [등록되지 않은 음식] '{user_input}'은(는) 데이터베이스에 없습니다.")
-            print(" 올바른 음식명을 다시 입력해 주시거나, '그만'을 입력해 종료하세요.")
-            print("❌ " * 22 + "\n")
-            continue  # 루프의 처음으로 돌아가 재입력 받음
-           
-        # 3. 정상 데이터 조회 및 분석 처리
+    # 2. 빈 값 입력 처리
+    elif not user_input:
+        st.warning("⚠️ 음식 이름을 입력해 주세요.")
+       
+    # 3. 데이터베이스에 없는 음식 입력 시 재입력 유도
+    elif user_input not in FOOD_DATABASE:
+        st.error(
+            f"❌ **[등록되지 않은 음식]** '{user_input}'은(는) 데이터베이스에 없습니다.\n\n"
+            "📋 올바른 음식명을 다시 입력해 주시거나, 종료를 원하시면 **'그만'**을 입력해 주세요."
+        )
+       
+    # 4. 정상 입력 시 데이터 분석 및 시각화 출력
+    else:
         info = FOOD_DATABASE[user_input]
         emoji = info["emoji"]
         start_date = info["start"]
@@ -152,16 +167,21 @@ def run_chatbot():
         pool = select_prediction_pool(features)
         selected_prediction = random.choice(pool)
 
-        # 4. 가독성을 높인 결과 출력 레이아웃
-        print("\n" + "✨" * 32)
-        print(f" {emoji} 분석 완료: [ {user_input} ]")
-        print("✨" * 32)
-        print(f" • 🤖 핵심 성공 요인 : {', '.join([f'[{f}]' for f in features])}")
-        print(f" • 📅 유행 시작 시점 : {start_date}")
-        print(f" • 🏁 유행 종료 시점 : {end_date}")
-        print("-" * 65)
-        print(f" 🔮 [ 다음 유행 예측 ]\n    ↳ {selected_prediction}")
-        print("=" * 65 + "\n")
-
-if __name__ == "__main__":
-    run_chatbot()
+        # 결과 시각화 레이아웃
+        st.success(f"분석 완료: **{emoji} {user_input}**")
+       
+        # 기간 정보 2열 지표 배치
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="📅 유행 시작 시점", value=start_date)
+        with col2:
+            st.metric(label="🏁 유행 종료 시점", value=end_date)
+           
+        st.markdown("### 🤖 핵심 성공 요인")
+        features_md = " ".join([f"`{feat}`" for feat in features])
+        st.markdown(features_md)
+       
+        st.markdown("---")
+       
+        st.markdown("### 🔮 다음 유행 예측")
+        st.info(selected_prediction)
