@@ -125,41 +125,58 @@ st.markdown("---")
 
 # 사이드바 설정
 st.sidebar.header("📌 이용 안내")
-st.sidebar.info("드롭다운 메뉴에서 분석하고 싶은 음식을 선택한 뒤, **'분석 및 예측 시작하기'** 버튼을 클릭하세요.")
-
-# 메인 입력 화면
-selected_food = st.selectbox(
-    "🔍 분석할 음식 이름을 선택하세요:",
-    list(FOOD_DATABASE.keys())
+st.sidebar.info(
+    "드롭다운 메뉴에서 분석하고 싶은 음식을 선택하거나 직접 입력한 뒤, "
+    "**'분석 및 예측 시작하기'** 버튼을 클릭하세요.\n\n"
+    "🚪 종료하려면 입력창에 **'그만'**을 입력하세요."
 )
 
-if st.button("🚀 분석 및 예측 시작하기", type="primary"):
-    # 데이터 조회
-    info = FOOD_DATABASE[selected_food]
-    emoji = info["emoji"]
-    start_date = info["start"]
-    end_date = info["end"]
-    features = info["features"]
-   
-    # 예측 데이터 선정
-    pool = select_prediction_pool(features)
-    selected_prediction = random.choice(pool)
+# 메인 입력 화면 (selectbox 대신 사용자가 직접 입력할 수 있도록 st.text_input 활용)
+user_input = st.text_input(
+    "🔍 분석할 음식 이름을 입력하세요 (종료하려면 '그만' 입력):",
+    placeholder="예: 두바이 초콜릿"
+).strip()
 
-    # 결과 출력 레이아웃
-    st.success(f"분석 완료: **{emoji} {selected_food}**")
-   
-    # 2열 레이아웃으로 기간 정보 시각화
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric(label="📅 유행 시작일", value=start_date)
-    with col2:
-        st.metric(label="🏁 유행 종료일", value=end_date)
+if st.button("🚀 분석 및 예측 시작하기", type="primary"):
+    # 종료 조건 처리
+    if user_input == "그만":
+        st.warning("👋 프로그램을 종료합니다. 수고하셨습니다!")
+        st.stop()
        
-    st.markdown("### 🤖 핵심 성공 요인")
-    features_md = " ".join([f"`{feat}`" for feat in features])
-    st.markdown(features_md)
-   
-    st.markdown("---")
-   
-    st.markdown("### 🔮 다음 유행 예측")
-    st.info(selected_prediction)
+    # 데이터베이스에 없는 값 입력 시 반복 유도 및 안내
+    if user_input not in FOOD_DATABASE:
+        st.error(
+            f"⚠️ **[오류]** '{user_input}'은(는) 데이터베이스에 없는 음식입니다.\n\n"
+            "📋 등록된 음식명을 확인하고 다시 입력해 주세요. "
+            "(종료를 원하시면 **'그만'**을 입력해 주세요.)"
+        )
+    else:
+        # 데이터 조회
+        info = FOOD_DATABASE[user_input]
+        emoji = info["emoji"]
+        start_date = info["start"]
+        end_date = info["end"]
+        features = info["features"]
+       
+        # 예측 데이터 선정
+        pool = select_prediction_pool(features)
+        selected_prediction = random.choice(pool)
+
+        # 결과 출력 레이아웃
+        st.success(f"분석 완료: **{emoji} {user_input}**")
+       
+        # 2열 레이아웃으로 기간 정보 시각화
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="📅 유행 시작일", value=start_date)
+        with col2:
+            st.metric(label="🏁 유행 종료일", value=end_date)
+           
+        st.markdown("### 🤖 핵심 성공 요인")
+        features_md = " ".join([f"`{feat}`" for feat in features])
+        st.markdown(features_md)
+       
+        st.markdown("---")
+       
+        st.markdown("### 🔮 다음 유행 예측")
+        st.info(selected_prediction)
