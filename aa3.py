@@ -120,27 +120,29 @@ def select_prediction_pool(features):
 st.set_page_config(page_title="트렌드 음식 분석 AI", page_icon="🍲", layout="centered")
 
 st.title("🍲 트렌드 음식 분석 및 다음 유행 예측 대시보드")
-st.markdown("과거 큰 인기를 끌었던 트렌드 음식을 직접 입력하고 성공 요인과 다음 유행 전망을 확인해 보세요.")
+st.markdown("과거 큰 인기를 끌었던 트렌드 음식을 입력하고 성공 요인과 다음 유행 전망을 확인해 보세요.")
 st.markdown("---")
 
 # 사이드바 설정
 st.sidebar.header("📌 이용 안내")
 st.sidebar.info(
-    "• 입력창에 분석하고 싶은 음식 이름을 **직접 입력**하세요.\n"
-    "• 등록되지 않은 이름을 입력하면 **재입력**을 안내합니다.\n"
+    "• 입력창에 분석하고 싶은 음식 이름을 입력하세요.\n"
+    "• 데이터에 없는 값이면 **재입력 루프**가 작동합니다.\n"
     "• 종료하려면 **'그만'**을 입력하세요."
 )
 
-# 사용자 입력 받기 (텍스트 입력 위젯)
-user_input = st.text_input(
-    "🔍 분석할 음식 이름을 입력하세요:",
-    placeholder="예: 두바이 초콜릿, 탕후루, 요아정 등"
-).strip()
-
-# 버튼 클릭 또는 값이 입력된 경우 처리
-if st.button("🚀 분석 및 예측 실행", type="primary"):
+# 사용자 입력 받기 (폼을 사용하여 엔터나 버튼 클릭 시 입력값 처리)
+with st.form(key="food_form"):
+    user_input = st.text_input(
+        "🔍 분석할 음식 이름을 입력하세요:",
+        placeholder="예: 두바이 초콜릿, 탕후루 등"
+    ).strip()
    
-    # 1. 종료 조건 처리
+    submit_button = st.form_submit_button(label="🚀 분석 및 예측 실행", type="primary")
+
+# 실행 버튼을 눌렀을 때의 로직 (콘솔의 while 루프 역할을 Streamlit 세션과 폼 제출이 대체)
+if submit_button:
+    # 1. 종료 조건
     if user_input == "그만":
         st.warning("👋 프로그램을 종료합니다. 이용해 주셔서 감사합니다!")
         st.stop()
@@ -149,14 +151,14 @@ if st.button("🚀 분석 및 예측 실행", type="primary"):
     elif not user_input:
         st.warning("⚠️ 음식 이름을 입력해 주세요.")
        
-    # 3. 데이터베이스에 없는 음식 입력 시 재입력 유도
+    # 3. 데이터베이스에 없는 값 입력 시 (콘솔의 continue 역할)
     elif user_input not in FOOD_DATABASE:
         st.error(
             f"❌ **[등록되지 않은 음식]** '{user_input}'은(는) 데이터베이스에 없습니다.\n\n"
-            "📋 올바른 음식명을 다시 입력해 주시거나, 종료를 원하시면 **'그만'**을 입력해 주세요."
+            "🔄 올바른 음식명으로 **다시 입력**해 주시거나, 종료하려면 **'그만'**을 입력해 주세요."
         )
        
-    # 4. 정상 입력 시 데이터 분석 및 시각화 출력
+    # 4. 정상 입력 시 데이터 분석 결과 출력
     else:
         info = FOOD_DATABASE[user_input]
         emoji = info["emoji"]
@@ -170,7 +172,6 @@ if st.button("🚀 분석 및 예측 실행", type="primary"):
         # 결과 시각화 레이아웃
         st.success(f"분석 완료: **{emoji} {user_input}**")
        
-        # 기간 정보 2열 지표 배치
         col1, col2 = st.columns(2)
         with col1:
             st.metric(label="📅 유행 시작 시점", value=start_date)
